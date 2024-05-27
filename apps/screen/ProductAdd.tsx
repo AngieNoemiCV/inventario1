@@ -1,87 +1,46 @@
 import React, {useState} from 'react';
-import {SafeAreaView, StyleSheet, TextInput, Button, Alert} from 'react-native';
-import localDB from './persistence/localbd'; // Importa el módulo para acceder a la base de datos
+import {Button, SafeAreaView, Text, TextInput} from 'react-native';
+import LocalDB from './persistence/localbd';
+import {NavigationProp, useNavigation} from '@react-navigation/native';
+import {RootStackParamList} from '../../App';
+import WebServiceParams from '../WebServiceParams';
 
-const ProductAdd: React.FC = () => {
-  const [nombre, setNombre] = useState('');
-  const [precio, setPrecio] = useState('');
-  const [minStock, setMinStock] = useState('');
-  const [maxStock, setMaxStock] = useState('');
+export default function ProductAdd(): React.JSX.Element {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const [nombre, setNombre] = useState<string>('');
+  const [precio, setPrecio] = useState<string>('0');
+  const [minStock, setMinStock] = useState<string>('0');
 
-  const guardarProducto = async () => {
-    if (!nombre || !precio || !minStock || !maxStock) {
-      Alert.alert('Error', 'Por favor complete todos los campos');
-      return;
-    }
-
-    try {
-      const db = await localDB.connect();
-      await db.executeSql(
-        'INSERT INTO productos (nombre, precio, minStock, currentStock, maxStock) VALUES (?, ?, ?, 0, ?)',
-        [nombre, parseFloat(precio), parseInt(minStock), parseInt(maxStock)],
+  const btnGuardarOnPress = async () => {
+    const db = await LocalDB.connect();
+    db.transaction(tx => {
+      tx.executeSql(
+        'INSERT INTO productos (nombre, precio, minStock) VALUES (?, ?, ?)',
+        [nombre, precio, minStock],
       );
-      Alert.alert('Éxito', 'Producto guardado exitosamente');
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Error', 'Hubo un error al guardar el producto');
-    }
+      navigation.goBack();
+    });
+    const response = await fetch(
+      `http://${WebServiceParams.host}:${WebServiceParams.port}/productos`,
+      {
+        method : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({nombre, precio, minStock}),
+      },
+    );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <TextInput
-        style={styles.input}
-        placeholder="Nombre del producto"
-        value={nombre}
-        onChangeText={setNombre}
-        placeholderTextColor="rgba(0, 0, 0, 0.5)" // Color negro con opacidad reducida
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Precio"
-        value={precio}
-        onChangeText={setPrecio}
-        keyboardType="numeric"
-        placeholderTextColor="rgba(0, 0, 0, 0.5)" // Color negro con opacidad reducida
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Stock mínimo"
-        value={minStock}
-        onChangeText={setMinStock}
-        keyboardType="numeric"
-        placeholderTextColor="rgba(0, 0, 0, 0.5)" // Color negro con opacidad reducida
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Stock máximo"
-        value={maxStock}
-        onChangeText={setMaxStock}
-        keyboardType="numeric"
-        placeholderTextColor="rgba(0, 0, 0, 0.5)" // Color negro con opacidad reducida
-      />
-      <Button title="Guardar" onPress={guardarProducto} />
+    <SafeAreaView>
+      <Text>Nombre</Text>
+      <TextInput onChangeText={t => setNombre(t)} />
+      <Text>Precio</Text>
+      <TextInput onChangeText={t => setPrecio(t)} />
+      <Text>Min. Stock</Text>
+      <TextInput onChangeText={t => setMinStock(t)} />
+      <Button title="Guardar" onPress={btnGuardarOnPress} />
     </SafeAreaView>
   );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  input: {
-    height: 40,
-    width: '100%',
-    borderColor: 'gray',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    marginBottom: 10,
-    color: 'black', // Establece el color del texto en negro
-  },
-});
-
-export default ProductAdd;
+}

@@ -21,6 +21,18 @@ export default class LocalDB {
         () => console.log('CREATED TABLE productos'),
         error => console.error({error}),
       );
+
+      tx.executeSql(
+        `CREATE TABLE IF NOT EXISTS movimientos (
+          id_movimiento   INTEGER         PRIMARY KEY         AUTOINCREMENT,
+          id_producto     INTEGER         NOT NULL,        
+          fecha_hora      DATETIME        NOT NULL,        
+          cantidad        INTEGER         NOT NULL,
+        );`,
+        [],
+        () => console.log('CREATED TABLE movimientos'),
+        error => console.error({error}),
+      );
     });
   }
 }

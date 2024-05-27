@@ -1,5 +1,5 @@
 import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useEffect, useState } from 'react';
+import React, { createContext, useEffect, useState } from 'react';
 import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { RouteProp } from '@react-navigation/native';
 import { Product } from './model/Products';
@@ -36,8 +36,7 @@ function Home({ navigation }: HomeProps): React.JSX.Element {
 
   useEffect(() => {
     LocalDB.init();
-    navigation.addListener('focus', async () => {
-      const db = await LocalDB.connect();
+      /*const db = await LocalDB.connect();
       db.transaction(async tx => {
         tx.executeSql('SELECT * FROM productos', [], (_, res) => {
           let prods = [];
@@ -49,8 +48,24 @@ function Home({ navigation }: HomeProps): React.JSX.Element {
         },
           error => console.error({ error }),
         );
-      });
-    });
+      });*/
+      navigation.addListener('focus', async() => {
+        try{
+      const response = await fetch(
+        'http://${WebServicesParams.host}:${WebServicesParams.port}/productos',
+        {
+          method: 'GET',
+          headers: {
+            'Accept' : 'aplicacion/json',
+            'Content-Type' : 'text/plain',
+          },
+        },
+      );
+      setProducts (await response.json());
+    } catch (error){
+      console.error(error);
+    }
+  });
   }, [navigation]);
 
 
